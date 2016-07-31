@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'IUpgrade_Example' do
+  pod 'IUpgrade', :path => '../'
+
+  target 'IUpgrade_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end
