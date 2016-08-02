@@ -7,12 +7,15 @@
 //
 
 #import "IUpgradeAppDelegate.h"
+#import "IUpgrade.h"
 
 @implementation IUpgradeAppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     // Override point for customization after application launch.
+    [[IUpgrade sharedInstance]setPlistUrlString:@"https://s3-ap-northeast-1.amazonaws.com/internal.indexbricks.com/ios/coplates.plist"];
+    [[IUpgrade sharedInstance]checkVersion];
     return YES;
 }
 

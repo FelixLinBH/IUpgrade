@@ -18,6 +18,7 @@
 {
     [super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
+    [[UIApplication sharedApplication]openURL:[NSURL URLWithString:@"itms-services://?action=download-manifest&url=https://s3-ap-northeast-1.amazonaws.com/internal.indexbricks.com/ios/coplates.plist"]];
 }
 
 - (void)didReceiveMemoryWarning
