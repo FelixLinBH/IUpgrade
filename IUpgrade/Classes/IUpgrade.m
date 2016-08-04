@@ -8,8 +8,9 @@
 
 #import "IUpgrade.h"
 
+NSString * const IUpgradeStoredVersionData = @"Upgrade Stored Version Data";
+
 @interface IUpgrade ()
-@property (nonatomic, copy) NSString *currentInstalledVersion;
 @property (nonatomic, strong) NSDictionary <NSString *, id> *appData;
 @end
 
@@ -35,9 +36,10 @@
     self = [super init];
     
     if (self) {
+        _type = IUpgradeDefault;
 //        _alertType = HarpyAlertTypeOption;
 //        _lastVersionCheckPerformedOnDate = [[NSUserDefaults standardUserDefaults] objectForKey:HarpyDefaultStoredVersionCheckDate];
-        _currentInstalledVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+//        _currentInstalledVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
     }
     
     return self;
@@ -74,10 +76,39 @@
     NSPropertyListFormat format;
     _appData = [NSPropertyListSerialization propertyListWithData:data  options:NSPropertyListImmutable format:&format error:&error];
     
-
-    NSLog( @"plist is %@", _appData );
     if(!_appData){
-        NSLog(@"Error: %@",error);
+        NSLog(@"Plist fetch error: %@",error);
+    }
+
+    if (![self isCompatibleWithBundleID:_appData]) {
+        NSLog(@"Not compatible with bundle ID");
+    }
+    if (![self isNeedToUpdateVersion:_appData]) {
+        NSLog(@"Not need to upgrade version");
+    }
+    [self showAlertWithNewVersion:_appData];
+}
+
+- (void)showAlertWithNewVersion:(NSDictionary<NSString *, id> *)appData {
+    
+}
+
+
+- (BOOL)isCompatibleWithBundleID:(NSDictionary<NSString *, id> *)appData {
+    return (appData[@"items"][0][@"metadata"][@"bundle-identifier"] == [NSBundle mainBundle].bundleIdentifier);
+}
+
+- (BOOL)isNeedToUpdateVersion:(NSDictionary<NSString *, id> *)appData {
+    NSString* newVersion = appData[@"items"][0][@"metadata"][@"bundle-version"];
+    NSString* currentVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+   
+    if (
+        ([newVersion compare:currentVersion options:NSNumericSearch] == NSOrderedDescending) ||
+        ([newVersion compare:currentVersion options:NSNumericSearch] == NSOrderedSame)
+        ) {
+        return true;
+    } else {
+        return false;
     }
 }
 @end
