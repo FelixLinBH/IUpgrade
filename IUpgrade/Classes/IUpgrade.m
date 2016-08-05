@@ -8,10 +8,11 @@
 
 #import "IUpgrade.h"
 
-NSString * const IUpgradeStoredVersionData = @"Upgrade Stored Version Data";
+NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
 
 @interface IUpgrade ()
 @property (nonatomic, strong) NSDictionary <NSString *, id> *appData;
+@property (nonatomic, strong) UIViewController *presentingViewController;
 @end
 
 
@@ -90,7 +91,68 @@ NSString * const IUpgradeStoredVersionData = @"Upgrade Stored Version Data";
 }
 
 - (void)showAlertWithNewVersion:(NSDictionary<NSString *, id> *)appData {
+    NSString *newVersion = appData[@"items"][0][@"metadata"][@"bundle-version"];
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"title"
+                                                                             message:@"message"
+                                                                      preferredStyle:UIAlertControllerStyleAlert];
+    switch (_type) {
+        case IUpgradeDefault:{
+            [alertController addAction:[self updateAlertAction]];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                   [self.presentingViewController presentViewController:alertController animated:YES completion:nil];
+                });
+            
+            
+        
+            break;
+        }
+        case IUpgradeForec:
+            
+            break;
+        case IUpgradeSkip:
+            
+            break;
+    }
+}
+
+- (UIViewController *)presentingViewController{
+    return [UIApplication sharedApplication].keyWindow.rootViewController;
+}
+
+- (UIAlertAction *)updateAlertAction {
+    UIAlertAction *updateAlertAction = [UIAlertAction actionWithTitle:@"Update"
+                                                                style:UIAlertActionStyleDefault
+                                                              handler:^(UIAlertAction *action) {
+//                                                                  [self launchAppStore];
+                                                              }];
     
+    return updateAlertAction;
+}
+
+- (UIAlertAction *)nextTimeAlertAction {
+    UIAlertAction *nextTimeAlertAction = [UIAlertAction actionWithTitle:@"next"
+                                                                  style:UIAlertActionStyleDefault
+                                                                handler:^(UIAlertAction *action) {
+//                                                                    if([self.delegate respondsToSelector:@selector(harpyUserDidCancel)]){
+//                                                                        [self.delegate harpyUserDidCancel];
+//                                                                    }
+                                                                }];
+    
+    return nextTimeAlertAction;
+}
+
+- (UIAlertAction *)skipAlertAction {
+    UIAlertAction *skipAlertAction = [UIAlertAction actionWithTitle:@"Skip"
+                                                              style:UIAlertActionStyleDefault
+                                                            handler:^(UIAlertAction *action) {
+//                                                                [[NSUserDefaults standardUserDefaults] setObject:_currentAppStoreVersion forKey:HarpyDefaultSkippedVersion];
+//                                                                [[NSUserDefaults standardUserDefaults] synchronize];
+//                                                                if([self.delegate respondsToSelector:@selector(harpyUserDidSkipVersion)]){
+//                                                                    [self.delegate harpyUserDidSkipVersion];
+//                                                                }
+                                                            }];
+    
+    return skipAlertAction;
 }
 
 
@@ -100,6 +162,13 @@ NSString * const IUpgradeStoredVersionData = @"Upgrade Stored Version Data";
 
 - (BOOL)isNeedToUpdateVersion:(NSDictionary<NSString *, id> *)appData {
     NSString* newVersion = appData[@"items"][0][@"metadata"][@"bundle-version"];
+    
+    NSDictionary *versionDate = [[NSUserDefaults standardUserDefaults]objectForKey:IUpgradeStoredVersionSkipData];
+    
+    if ([versionDate objectForKey:newVersion]) {
+        return false;
+    }
+    
     NSString* currentVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
    
     if (
