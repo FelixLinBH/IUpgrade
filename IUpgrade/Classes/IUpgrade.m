@@ -13,6 +13,7 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
 @interface IUpgrade ()
 @property (nonatomic, strong) NSDictionary <NSString *, id> *appData;
 @property (nonatomic, strong) UIViewController *presentingViewController;
+@property (nonatomic, assign) NSString *plistVersion;
 @end
 
 
@@ -98,20 +99,29 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
     switch (_type) {
         case IUpgradeDefault:{
             [alertController addAction:[self updateAlertAction]];
+            [alertController addAction:[self nextTimeAlertAction]];
                 dispatch_async(dispatch_get_main_queue(), ^{
                    [self.presentingViewController presentViewController:alertController animated:YES completion:nil];
                 });
-            
-            
-        
             break;
         }
-        case IUpgradeForec:
-            
+        case IUpgradeForec:{
+            [alertController addAction:[self updateAlertAction]];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.presentingViewController presentViewController:alertController animated:YES completion:nil];
+            });
+
             break;
-        case IUpgradeSkip:
-            
+        }
+        case IUpgradeSkip:{
+            [alertController addAction:[self updateAlertAction]];
+            [alertController addAction:[self skipAlertAction]];
+            [alertController addAction:[self nextTimeAlertAction]];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.presentingViewController presentViewController:alertController animated:YES completion:nil];
+            });
             break;
+        }
     }
 }
 
@@ -119,23 +129,29 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
     return [UIApplication sharedApplication].keyWindow.rootViewController;
 }
 
+- (void)launchInstall{
+    
+    NSString *actionUrl = [NSString stringWithFormat:@"itms-services://?action=download-manifest&url=%@",_plistUrlString];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[UIApplication sharedApplication]openURL:[NSURL URLWithString:actionUrl]];
+    });
+}
+
 - (UIAlertAction *)updateAlertAction {
     UIAlertAction *updateAlertAction = [UIAlertAction actionWithTitle:@"Update"
                                                                 style:UIAlertActionStyleDefault
                                                               handler:^(UIAlertAction *action) {
-//                                                                  [self launchAppStore];
+                                                                  [self launchInstall];
                                                               }];
     
     return updateAlertAction;
 }
 
 - (UIAlertAction *)nextTimeAlertAction {
-    UIAlertAction *nextTimeAlertAction = [UIAlertAction actionWithTitle:@"next"
+    UIAlertAction *nextTimeAlertAction = [UIAlertAction actionWithTitle:@"Next"
                                                                   style:UIAlertActionStyleDefault
                                                                 handler:^(UIAlertAction *action) {
-//                                                                    if([self.delegate respondsToSelector:@selector(harpyUserDidCancel)]){
-//                                                                        [self.delegate harpyUserDidCancel];
-//                                                                    }
+
                                                                 }];
     
     return nextTimeAlertAction;
@@ -145,16 +161,26 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
     UIAlertAction *skipAlertAction = [UIAlertAction actionWithTitle:@"Skip"
                                                               style:UIAlertActionStyleDefault
                                                             handler:^(UIAlertAction *action) {
-//                                                                [[NSUserDefaults standardUserDefaults] setObject:_currentAppStoreVersion forKey:HarpyDefaultSkippedVersion];
-//                                                                [[NSUserDefaults standardUserDefaults] synchronize];
-//                                                                if([self.delegate respondsToSelector:@selector(harpyUserDidSkipVersion)]){
-//                                                                    [self.delegate harpyUserDidSkipVersion];
-//                                                                }
+                                                                [self storeSkipNewVersion];
                                                             }];
     
     return skipAlertAction;
 }
 
+- (void)storeSkipNewVersion{
+    NSMutableDictionary *versionData =
+    [[NSUserDefaults standardUserDefaults]objectForKey:IUpgradeStoredVersionSkipData];
+    if (versionData == nil) {
+        versionData = [NSMutableDictionary new];
+    }
+    versionData = [versionData mutableCopy];
+    [versionData setObject:[NSNumber numberWithBool:YES] forKey:_plistVersion];
+    
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+    [defaults setObject:versionData forKey:IUpgradeStoredVersionSkipData];
+    [defaults synchronize];
+}
 
 - (BOOL)isCompatibleWithBundleID:(NSDictionary<NSString *, id> *)appData {
     return (appData[@"items"][0][@"metadata"][@"bundle-identifier"] == [NSBundle mainBundle].bundleIdentifier);
@@ -162,8 +188,8 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
 
 - (BOOL)isNeedToUpdateVersion:(NSDictionary<NSString *, id> *)appData {
     NSString* newVersion = appData[@"items"][0][@"metadata"][@"bundle-version"];
-    
-    NSDictionary *versionDate = [[NSUserDefaults standardUserDefaults]objectForKey:IUpgradeStoredVersionSkipData];
+    _plistVersion = newVersion;
+    NSMutableDictionary *versionDate = [[NSUserDefaults standardUserDefaults]objectForKey:IUpgradeStoredVersionSkipData];
     
     if ([versionDate objectForKey:newVersion]) {
         return false;
