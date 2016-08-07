@@ -53,13 +53,10 @@ It will show message that **"prefix version suffix"**.
 ```
 [[IUpgrade sharedInstance]checkVersion];
 ```
-<<<<<<< HEAD
 
 ### Screen shot
 
 ![Editor preferences pane](https://github.com/FelixLinBH/IUpgrade/blob/master/ScreenShot.png?raw=true)
-=======
->>>>>>> 5e7125ef8e638c2473d371a4e332f0ccfa1d75ac
 
 
 ## Installation
