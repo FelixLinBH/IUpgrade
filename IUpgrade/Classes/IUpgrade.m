@@ -7,7 +7,7 @@
 //
 
 #import "IUpgrade.h"
-
+#import "objc/runtime.h"
 NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
 
 @interface IUpgrade ()
@@ -30,26 +30,67 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
     return sharedInstance;
 }
 
-+ (void)setInstallURLString:(NSString *) urlString {
-    
-}
-
 - (id)init {
     self = [super init];
     
     if (self) {
         _type = IUpgradeDefault;
-//        _alertType = HarpyAlertTypeOption;
-//        _lastVersionCheckPerformedOnDate = [[NSUserDefaults standardUserDefaults] objectForKey:HarpyDefaultStoredVersionCheckDate];
-//        _currentInstalledVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
     }
     
     return self;
 }
 
-- (NSURL *)installURL {
-    
+- (void)setType:(IUpgradeAlertType)type {
+    _type = type;
+    if (type == IUpgradeForec) {
+        [self swizzlingAppDelegate];
+    }
 }
+
+#pragma mark - Swizzling AppDelegate
+
+- (Class) getAppDelegate{
+    unsigned int numberOfClasses = 0;
+    Class *classes = objc_copyClassList(&numberOfClasses);
+    Class appDelegateClass = nil;
+    for (unsigned int i = 0; i < numberOfClasses; ++i) {
+        if (class_conformsToProtocol(classes[i], @protocol(UIApplicationDelegate))) {
+            appDelegateClass = classes[i];
+        }
+    }
+    return appDelegateClass;
+}
+
+- (void)swizzlingAppDelegate{
+    
+    
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        
+        Class selfClass = [self class];
+        Class appDelegateClass = [self getAppDelegate];
+        SEL oriSEL = @selector(applicationWillEnterForeground:);
+        Method oriMethod = class_getInstanceMethod(appDelegateClass, oriSEL);
+        
+        SEL cusSEL = @selector(IUpgradeApplicationWillEnterForeground:);
+        Method cusMethod = class_getInstanceMethod(selfClass, cusSEL);
+        
+        BOOL addSucc = class_addMethod(appDelegateClass, oriSEL, method_getImplementation(cusMethod), method_getTypeEncoding(cusMethod));
+        if (addSucc) {
+            class_replaceMethod(appDelegateClass, cusSEL, method_getImplementation(oriMethod), method_getTypeEncoding(oriMethod));
+        }else {
+            method_exchangeImplementations(oriMethod, cusMethod);
+        }
+        
+    });
+
+}
+- (void)IUpgradeApplicationWillEnterForeground:(UIApplication *)application
+{
+    [[IUpgrade sharedInstance]checkVersion];
+    [self IUpgradeApplicationWillEnterForeground:application];
+}
+
 
 #pragma mark - Public
 
