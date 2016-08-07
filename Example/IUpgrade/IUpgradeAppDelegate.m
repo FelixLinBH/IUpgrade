@@ -13,8 +13,11 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    [self.window makeKeyAndVisible];
     // Override point for customization after application launch.
-    [[IUpgrade sharedInstance]setPlistUrlString:@"https://s3-ap-northeast-1.amazonaws.com/internal.indexbricks.com/ios/coplates.plist"];
+    [[IUpgrade sharedInstance]setPlistUrlString:@"https://xxx.plist"];
+//    [[IUpgrade sharedInstance]setType:IUpgradeForec];
+//    [[IUpgrade sharedInstance]setAlertTitle:@"test1" prefixMessage:@"test2" suffixMessage:@"test3"];
     [[IUpgrade sharedInstance]checkVersion];
     return YES;
 }
