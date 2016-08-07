@@ -47,6 +47,28 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
     _type = type;
 }
 
+#pragma mark - Get
+
+- (NSString *)alertTitle{
+    if (!_alertTitle) {
+        return @"Upgrade";
+    }
+    return _alertTitle;
+}
+
+- (NSString *)prefixMessage{
+    if (!_prefixMessage) {
+        return @"Please upgrade to version";
+    }
+    return _prefixMessage;
+}
+
+- (NSString *)suffixMessage{
+    if (!_suffixMessage) {
+        return @"";
+    }
+    return _suffixMessage;
+}
 #pragma mark - Public
 
 - (void)checkVersion {
@@ -62,11 +84,12 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
     [self checkVersion];
 }
 
-- (void)setAlertTitle:(NSString *)title message:(NSString *)message{
-    _alertController = [UIAlertController alertControllerWithTitle:title
-                                                           message:message
-                                                    preferredStyle:UIAlertControllerStyleAlert];
+- (void)setAlertTitle:(NSString *)alertTitle prefixMessage:(NSString *)prefixMessage suffixMessage:(NSString *)suffixMessage{
+    _alertTitle = alertTitle;
+    _prefixMessage = prefixMessage;
+    _suffixMessage = suffixMessage;
 }
+
 
 #pragma mark - Helpers
 - (void)performVersionCheck {
@@ -89,22 +112,33 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
     _appData = [NSPropertyListSerialization propertyListWithData:data  options:NSPropertyListImmutable format:&format error:&error];
     
     if(!_appData){
-        NSLog(@"Plist fetch error: %@",error);
+        //NSLog(@"Plist fetch error: %@",error);
+        return;
     }
 
     if (![self isCompatibleWithBundleID:_appData]) {
-        NSLog(@"Not compatible with bundle ID");
+        //NSLog(@"Not compatible with bundle ID");
+        return;
     }
     if (![self isNeedToUpdateVersion:_appData]) {
-        NSLog(@"Not need to upgrade version");
+        //NSLog(@"Not need to upgrade version");
+        return;
     }
     [self showAlertWithNewVersion:_appData];
 }
 
+- (void)initAlertController:(NSString *)title message:(NSString *)message{
+    _alertController = [UIAlertController alertControllerWithTitle:title
+                                                           message:message
+                                                    preferredStyle:UIAlertControllerStyleAlert];
+}
+
+
 - (void)showAlertWithNewVersion:(NSDictionary<NSString *, id> *)appData {
-    [self setAlertTitle:@"Upgrade" message:@"New Version Release"];
-    NSString *newVersion = appData[@"items"][0][@"metadata"][@"bundle-version"];
     
+    NSString *newVersion = appData[@"items"][0][@"metadata"][@"bundle-version"];
+    NSString *message = [NSString stringWithFormat:@"%@ %@ %@",self.prefixMessage,newVersion,self.suffixMessage];
+    [self initAlertController:self.alertTitle message:message];
     
     switch (_type) {
         case IUpgradeDefault:{
