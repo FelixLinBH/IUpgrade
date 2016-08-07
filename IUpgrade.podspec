@@ -8,8 +8,8 @@
 
 Pod::Spec.new do |s|
   s.name             = 'IUpgrade'
-  s.version          = '0.1.0'
-  s.summary          = 'A short description of IUpgrade.'
+  s.version          = '1.0.0'
+  s.summary          = 'Notify new version of enterprise app is available.'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -18,14 +18,14 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-TODO: Add long description of the pod here.
+    Notify a new version of your enterprise release iOS app is available.
                        DESC
 
-  s.homepage         = 'https://github.com/<GITHUB_USERNAME>/IUpgrade'
-  # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
+  s.homepage         = 'https://github.com/FelixLinBH/IUpgrade'
+  s.screenshots     = 'https://raw.githubusercontent.com/FelixLinBH/IUpgrade/master/ScreenShot.png'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'felix.lin' => 'fly_81211@hotmail.com' }
-  s.source           = { :git => 'https://github.com/<GITHUB_USERNAME>/IUpgrade.git', :tag => s.version.to_s }
+  s.source           = { :git => 'https://github.com/FelixLinBH/IUpgrade.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '8.0'
@@ -37,6 +37,6 @@ TODO: Add long description of the pod here.
   # }
 
 s.public_header_files = 'IUpgrade/Classes/**/*.h'
-  # s.frameworks = 'UIKit', 'MapKit'
+   s.frameworks = 'UIKit'
   # s.dependency 'AFNetworking', '~> 2.3'
 end

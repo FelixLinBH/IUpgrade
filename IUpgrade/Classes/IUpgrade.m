@@ -107,7 +107,7 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
 }
 
 - (void)parseResults:(NSData *)data {
-    NSString *error;
+    NSError *error;
     NSPropertyListFormat format;
     _appData = [NSPropertyListSerialization propertyListWithData:data  options:NSPropertyListImmutable format:&format error:&error];
     
