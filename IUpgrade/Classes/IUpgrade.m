@@ -7,12 +7,13 @@
 //
 
 #import "IUpgrade.h"
-#import "objc/runtime.h"
+#import "UIResponder+IUpgrade.h"
 NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
 
 @interface IUpgrade ()
 @property (nonatomic, strong) NSDictionary <NSString *, id> *appData;
 @property (nonatomic, strong) UIViewController *presentingViewController;
+@property (nonatomic, strong) UIAlertController *alertController;
 @property (nonatomic, assign) NSString *plistVersion;
 @end
 
@@ -40,70 +41,38 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
     return self;
 }
 
+#pragma mark - Set
+
 - (void)setType:(IUpgradeAlertType)type {
     _type = type;
-    if (type == IUpgradeForec) {
-        [self swizzlingAppDelegate];
-    }
 }
-
-#pragma mark - Swizzling AppDelegate
-
-- (Class) getAppDelegate{
-    unsigned int numberOfClasses = 0;
-    Class *classes = objc_copyClassList(&numberOfClasses);
-    Class appDelegateClass = nil;
-    for (unsigned int i = 0; i < numberOfClasses; ++i) {
-        if (class_conformsToProtocol(classes[i], @protocol(UIApplicationDelegate))) {
-            appDelegateClass = classes[i];
-        }
-    }
-    return appDelegateClass;
-}
-
-- (void)swizzlingAppDelegate{
-    
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        
-        Class selfClass = [self class];
-        Class appDelegateClass = [self getAppDelegate];
-        SEL oriSEL = @selector(applicationWillEnterForeground:);
-        Method oriMethod = class_getInstanceMethod(appDelegateClass, oriSEL);
-        
-        SEL cusSEL = @selector(IUpgradeApplicationWillEnterForeground:);
-        Method cusMethod = class_getInstanceMethod(selfClass, cusSEL);
-        
-        BOOL addSucc = class_addMethod(appDelegateClass, oriSEL, method_getImplementation(cusMethod), method_getTypeEncoding(cusMethod));
-        if (addSucc) {
-            class_replaceMethod(appDelegateClass, cusSEL, method_getImplementation(oriMethod), method_getTypeEncoding(oriMethod));
-        }else {
-            method_exchangeImplementations(oriMethod, cusMethod);
-        }
-        
-    });
-
-}
-- (void)IUpgradeApplicationWillEnterForeground:(UIApplication *)application
-{
-    [[IUpgrade sharedInstance]checkVersion];
-    [self IUpgradeApplicationWillEnterForeground:application];
-}
-
 
 #pragma mark - Public
 
 - (void)checkVersion {
-    [self performVersionCheck];
+    if (_alertController == nil) {
+        [self performVersionCheck];
+    }
 }
 
+- (void)CheckVersionForced {
+    if (_type != IUpgradeForec) {
+        return;
+    }
+    [self checkVersion];
+}
+
+- (void)setAlertTitle:(NSString *)title message:(NSString *)message{
+    _alertController = [UIAlertController alertControllerWithTitle:title
+                                                           message:message
+                                                    preferredStyle:UIAlertControllerStyleAlert];
+}
 
 #pragma mark - Helpers
 - (void)performVersionCheck {
     
     
-     NSURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:self.plistUrlString]];
+    NSURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:self.plistUrlString]];
     NSURLSession *session = [NSURLSession sharedSession];
     NSURLSessionDataTask *task = [session dataTaskWithRequest:request
                                             completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
@@ -133,33 +102,33 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
 }
 
 - (void)showAlertWithNewVersion:(NSDictionary<NSString *, id> *)appData {
+    [self setAlertTitle:@"Upgrade" message:@"New Version Release"];
     NSString *newVersion = appData[@"items"][0][@"metadata"][@"bundle-version"];
-    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"title"
-                                                                             message:@"message"
-                                                                      preferredStyle:UIAlertControllerStyleAlert];
+    
+    
     switch (_type) {
         case IUpgradeDefault:{
-            [alertController addAction:[self updateAlertAction]];
-            [alertController addAction:[self nextTimeAlertAction]];
+            [_alertController addAction:[self updateAlertAction]];
+            [_alertController addAction:[self nextTimeAlertAction]];
                 dispatch_async(dispatch_get_main_queue(), ^{
-                   [self.presentingViewController presentViewController:alertController animated:YES completion:nil];
+                   [self.presentingViewController presentViewController:_alertController animated:YES completion:nil];
                 });
             break;
         }
         case IUpgradeForec:{
-            [alertController addAction:[self updateAlertAction]];
+            [_alertController addAction:[self updateAlertAction]];
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self.presentingViewController presentViewController:alertController animated:YES completion:nil];
+                [self.presentingViewController presentViewController:_alertController animated:YES completion:nil];
             });
 
             break;
         }
         case IUpgradeSkip:{
-            [alertController addAction:[self updateAlertAction]];
-            [alertController addAction:[self skipAlertAction]];
-            [alertController addAction:[self nextTimeAlertAction]];
+            [_alertController addAction:[self updateAlertAction]];
+            [_alertController addAction:[self skipAlertAction]];
+            [_alertController addAction:[self nextTimeAlertAction]];
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self.presentingViewController presentViewController:alertController animated:YES completion:nil];
+                [self.presentingViewController presentViewController:_alertController animated:YES completion:nil];
             });
             break;
         }
@@ -183,6 +152,7 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
                                                                 style:UIAlertActionStyleDefault
                                                               handler:^(UIAlertAction *action) {
                                                                   [self launchInstall];
+                                                                  _alertController = nil;
                                                               }];
     
     return updateAlertAction;
@@ -192,7 +162,7 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
     UIAlertAction *nextTimeAlertAction = [UIAlertAction actionWithTitle:@"Next"
                                                                   style:UIAlertActionStyleDefault
                                                                 handler:^(UIAlertAction *action) {
-
+                                                                    _alertController = nil;
                                                                 }];
     
     return nextTimeAlertAction;
@@ -203,6 +173,7 @@ NSString * const IUpgradeStoredVersionSkipData = @"Upgrade Stored Version Data";
                                                               style:UIAlertActionStyleDefault
                                                             handler:^(UIAlertAction *action) {
                                                                 [self storeSkipNewVersion];
+                                                                _alertController = nil;
                                                             }];
     
     return skipAlertAction;

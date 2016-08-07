@@ -20,4 +20,5 @@ typedef NS_ENUM(NSUInteger, IUpgradeAlertType)
 
 + (IUpgrade *)sharedInstance;
 - (void)checkVersion;
+- (void)CheckVersionForced;
 @end
